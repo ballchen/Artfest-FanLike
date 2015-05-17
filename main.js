@@ -1,12 +1,10 @@
-var fb = require('./fb');
+var fb = require('./fan');
 
 fb.login(function(err, fbuser) {
 	if (err) {
-		console.log(err)
+		console.log(err);
 	} else {
-		//stay online
-		//listen to messages
-		fb.get_some_friends(fbuser.id);
-		// fb.get_buddy(fbuser)
+		fb.pingpong(fbuser);
+		fb.get_messages();
 	}
-})
+});

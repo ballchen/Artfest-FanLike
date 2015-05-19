@@ -11,6 +11,8 @@ var fs = require('fs');
 var message = 'https://www.facebook.com/ajax/mercury/send_messages.php';
 var friends = 'https://www.facebook.com/friends'
 
+var plan_id = '798605910236376';
+
 //initial a cookie jar to save the session
 var j = request.jar();
 var fbrequest = request.defaults({
@@ -124,9 +126,10 @@ exports.get_messages = function get_messages(seq, callback) {
 				} else if (elem.type == "notification") {
 					try {
 						var real = ent.decode(elem.markup);
+						// console.log(real);
+						$ = cheerio.load(real);
 						var datagt = JSON.parse(real.match(/data-gt="(.+?)" data/)[1]);
 						if (datagt.notif_type == 'page_new_likes' && datagt.context_id == '583989995037428') {
-							$ = cheerio.load(real);
 							var name = $('#notification_' + datagt.alert_id + '_info .blueName')[0].children[0].data;
 							var image = $('img')[0].attribs.src;
 							var uid = datagt.from_uids[Object.keys(datagt.from_uids)[0]];
@@ -138,6 +141,47 @@ exports.get_messages = function get_messages(seq, callback) {
 								console.log('download done');
 							});
 						}
+						if (datagt.notif_type == 'plan_mall_activity' && datagt.context_id == plan_id) {
+							console.log(datagt);
+							var name = $('#notification_' + datagt.alert_id + '_info .blueName')[0].children[0].data;
+							var image = $('img')[0].attribs.src;
+							var uid = datagt.from_uids[Object.keys(datagt.from_uids)[0]];
+							console.log(name);
+							console.log(image);
+
+							console.log(uid);
+							download(image, './image/' + uid + '.jpg', function() {
+								console.log('download done');
+							});
+							var link = $('.notifMainLink').attr('href');
+							var sp = link.split(/(798605910236376\/)/);
+							var permal = sp[0] + sp[1] + 'permalink/' + sp[2];
+							console.log(permal);
+							fbrequest.get(permal, function(err, httpResponse, body) {
+								// fs.writeFileSync('a.html', body);
+								var gethidden = body.match(/code class="hidden_elem" id=".+"><!-- (<div.+userContent.+)? --><\/code/);
+								// console.log(gethidden[1]);
+								$ = cheerio.load(ent.decode(gethidden[1]));
+								var content = $('.userContent').text();
+								fs.appendFileSync('./name.txt', name + '\t' + uid + '\t' + content + '\n');
+
+
+							});
+
+						} else if (datagt.notif_type == 'plan_user_joined' && datagt.context_id == plan_id) {
+							console.log(datagt);
+							var name = $('#notification_' + datagt.alert_id + '_info .blueName')[0].children[0].data;
+							var image = $('img')[0].attribs.src;
+							var uid = datagt.from_uids[Object.keys(datagt.from_uids)[0]];
+							console.log(name);
+							console.log(image);
+							console.log(uid);
+							fs.appendFileSync('./name.txt', name + '\t' + uid + '\t我要參加！\n');
+							download(image, './image/' + uid + '.jpg', function() {
+								console.log('download done');
+							});
+						}
+
 
 					} catch (err) {
 						console.log(err)

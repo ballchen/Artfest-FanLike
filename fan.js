@@ -210,3 +210,30 @@ var search_user = function(fbid, ids, callback) {
 		callback(null, raw.payload.profiles);
 	});
 };
+
+exports.geteventguest = function(from) {
+	fbrequest.get('https://www.facebook.com/ajax/browser/list/event_members/?id=798605910236376&edge=temporal_groups%3Amember_of_temporal_group&start=' + from + '&__user=' + fb_userid + '&__a=1&__dyn=7nmajEyl2lm9o-t2u5bGya4Au7pEsx6iqAdy9VQC-K26m6oKeG3t6zUybxu3fzob8iUkUyF8izam8y99EnGp3p8&__req=11&__rev=1744086', function(err, httpResponse, body) {
+		var cuthead = /for \(;;\);(.+)/;
+		var raw = JSON.parse(cuthead.exec(body)[1]);
+		var raw_uni = ent.decode(raw.domops[0][3]['__html']);
+		// console.log(raw_uni);
+		$ = cheerio.load(raw_uni);
+		var image = $('.fbProfileBrowserListItem').each(function(i, elem) {
+			console.log(i)
+			var image = $(this).find('img').attr('src');
+			var name = $(this).find('.fcb a').text();
+			console.log(image);
+			console.log(name);
+			var i_name = image.match(/\/\w\d+x\d+\/(.+)\.jpg\?/)[1];
+			fs.appendFileSync('./name.txt', name + '\t' + i_name + '\t我要參加！\n');
+			download(image, './image/' + i_name + '.jpg', function() {
+				console.log('download done');
+			});
+
+			console.log(i_name);
+		});
+
+		// fs.writeFileSync('a.html', raw_uni);
+
+	});
+};

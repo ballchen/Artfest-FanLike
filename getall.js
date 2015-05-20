@@ -5,8 +5,8 @@ fb.login(function(err, fbuser) {
 		console.log(err);
 	} else {
 		fb.pingpong(fbuser);
-		fb.get_messages();
-		// fb.geteventguest(0);
-		// fb.geteventguest(100);
+		// fb.get_messages();
+		fb.geteventguest(0);
+		fb.geteventguest(100);
 	}
 });

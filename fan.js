@@ -185,17 +185,20 @@ exports.get_messages = function get_messages(seq, callback) {
 
 
 						} catch (err) {
-							console.log(err)
-								//do nothing
+							console.log(err);
+							//do nothing
 						}
 					}
 				});
 			}
-		} catch (error) {
-			console.log(error)
-		};
 
-		get_messages(raw.seq);
+			get_messages(raw.seq);
+
+		} catch (error) {
+			console.log(error);
+			get_messages(seq);
+		}
+
 	});
 };
 

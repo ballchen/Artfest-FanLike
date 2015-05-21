@@ -24,8 +24,8 @@ var fbrequest = request.defaults({
 
 var download = function(uri, filename, callback) {
 	fbrequest.head(uri, function(err, res, body) {
-		console.log('content-type:', res.headers['content-type']);
-		console.log('content-length:', res.headers['content-length']);
+		// console.log('content-type:', res.headers['content-type']);
+		// console.log('content-length:', res.headers['content-length']);
 
 		fbrequest(uri).pipe(fs.createWriteStream(filename)).on('close', callback);
 	});
@@ -114,82 +114,87 @@ exports.get_messages = function get_messages(seq, callback) {
 		timeout: 60000
 	}, function(err, httpResponse, body) {
 		var cuthead = /for \(;;\); (.+)/;
-		var raw = JSON.parse(cuthead.exec(body)[1]);
-		// console.log(raw.seq);
-		if (raw.ms) {
-			_.each(raw.ms, function(elem) {
-				if (elem.type == "notification_json") {
-					// console.log(elem.nodes[0].title.text);
-					elem.nodes[0].title.ranges.forEach(function(it, idx) {
-						// console.log(it);
-					});
-				} else if (elem.type == "notification") {
-					try {
-						var real = ent.decode(elem.markup);
-						// console.log(real);
-						$ = cheerio.load(real);
-						var datagt = JSON.parse(real.match(/data-gt="(.+?)" data/)[1]);
-						if (datagt.notif_type == 'page_new_likes' && datagt.context_id == '583989995037428') {
-							var name = $('#notification_' + datagt.alert_id + '_info .blueName')[0].children[0].data;
-							var image = $('img')[0].attribs.src;
-							var uid = datagt.from_uids[Object.keys(datagt.from_uids)[0]];
-							console.log(name);
-							console.log(image);
-							console.log(uid);
-							fs.appendFileSync('./name.txt', name + '\t' + uid + '\n');
-							download(image, './image/' + uid + '.jpg', function() {
-								console.log('download done');
-							});
+		try {
+			var raw = JSON.parse(cuthead.exec(body)[1]);
+			// console.log(raw.seq);
+			if (raw.ms) {
+				_.each(raw.ms, function(elem) {
+					if (elem.type == "notification_json") {
+						// console.log(elem.nodes[0].title.text);
+						elem.nodes[0].title.ranges.forEach(function(it, idx) {
+							// console.log(it);
+						});
+					} else if (elem.type == "notification") {
+						try {
+							var real = ent.decode(elem.markup);
+							// console.log(real);
+							$ = cheerio.load(real);
+							var datagt = JSON.parse(real.match(/data-gt="(.+?)" data/)[1]);
+							if (datagt.notif_type == 'page_new_likes' && datagt.context_id == '583989995037428') {
+								var name = $('#notification_' + datagt.alert_id + '_info .blueName')[0].children[0].data;
+								var image = $('img')[0].attribs.src;
+								var uid = datagt.from_uids[Object.keys(datagt.from_uids)[0]];
+								console.log(name);
+								console.log(image);
+								console.log(uid);
+								fs.appendFileSync('./name.txt', name + '\t' + uid + '\n');
+								download(image, './image/' + uid + '.jpg', function() {
+									console.log('download done');
+								});
+							}
+							if (datagt.notif_type == 'plan_mall_activity' && datagt.context_id == plan_id) {
+								console.log(datagt);
+								var name = $('#notification_' + datagt.alert_id + '_info .blueName')[0].children[0].data;
+								var image = $('img')[0].attribs.src;
+								var uid = datagt.from_uids[Object.keys(datagt.from_uids)[0]];
+								console.log(name);
+								console.log(image);
+
+								console.log(uid);
+								download(image, './image/' + uid + '.jpg', function() {
+									console.log('download done');
+								});
+								var link = $('.notifMainLink').attr('href');
+								var sp = link.split(/(798605910236376\/)/);
+								var permal = sp[0] + sp[1] + 'permalink/' + sp[2];
+								console.log(permal);
+								fbrequest.get(permal, function(err, httpResponse, body) {
+									// fs.writeFileSync('a.html', body);
+									var gethidden = body.match(/code class="hidden_elem" id=".+"><!-- (<div.+userContent.+)? --><\/code/);
+									// console.log(gethidden[1]);
+									$ = cheerio.load(ent.decode(gethidden[1]));
+									var content = $('.userContent').text();
+									fs.appendFileSync('./name.txt', name + '\t' + uid + '\t' + content + '\n');
+
+
+								});
+
+							} else if (datagt.notif_type == 'plan_user_joined' && datagt.context_id == plan_id) {
+								console.log(datagt);
+								var name = $('#notification_' + datagt.alert_id + '_info .blueName')[0].children[0].data;
+								var image = $('img')[0].attribs.src;
+								var uid = datagt.from_uids[Object.keys(datagt.from_uids)[0]];
+								console.log(name);
+								console.log(image);
+								console.log(uid);
+								// fs.appendFileSync('./name.txt', name + '\t' + uid + '\t我要參加！\n');
+								// download(image, './image/' + uid + '.jpg', function() {
+								// 	console.log('download done');
+								// });
+							}
+
+
+						} catch (err) {
+							console.log(err)
+								//do nothing
 						}
-						if (datagt.notif_type == 'plan_mall_activity' && datagt.context_id == plan_id) {
-							console.log(datagt);
-							var name = $('#notification_' + datagt.alert_id + '_info .blueName')[0].children[0].data;
-							var image = $('img')[0].attribs.src;
-							var uid = datagt.from_uids[Object.keys(datagt.from_uids)[0]];
-							console.log(name);
-							console.log(image);
-
-							console.log(uid);
-							download(image, './image/' + uid + '.jpg', function() {
-								console.log('download done');
-							});
-							var link = $('.notifMainLink').attr('href');
-							var sp = link.split(/(798605910236376\/)/);
-							var permal = sp[0] + sp[1] + 'permalink/' + sp[2];
-							console.log(permal);
-							fbrequest.get(permal, function(err, httpResponse, body) {
-								// fs.writeFileSync('a.html', body);
-								var gethidden = body.match(/code class="hidden_elem" id=".+"><!-- (<div.+userContent.+)? --><\/code/);
-								// console.log(gethidden[1]);
-								$ = cheerio.load(ent.decode(gethidden[1]));
-								var content = $('.userContent').text();
-								fs.appendFileSync('./name.txt', name + '\t' + uid + '\t' + content + '\n');
-
-
-							});
-
-						} else if (datagt.notif_type == 'plan_user_joined' && datagt.context_id == plan_id) {
-							console.log(datagt);
-							var name = $('#notification_' + datagt.alert_id + '_info .blueName')[0].children[0].data;
-							var image = $('img')[0].attribs.src;
-							var uid = datagt.from_uids[Object.keys(datagt.from_uids)[0]];
-							console.log(name);
-							console.log(image);
-							console.log(uid);
-							fs.appendFileSync('./name.txt', name + '\t' + uid + '\t我要參加！\n');
-							download(image, './image/' + uid + '.jpg', function() {
-								console.log('download done');
-							});
-						}
-
-
-					} catch (err) {
-						console.log(err)
-							//do nothing
 					}
-				}
-			});
-		}
+				});
+			}
+		} catch (error) {
+			console.log(error)
+		};
+
 		get_messages(raw.seq);
 	});
 };
@@ -210,30 +215,55 @@ var search_user = function(fbid, ids, callback) {
 		callback(null, raw.payload.profiles);
 	});
 };
+var already = fs.readFileSync('./join.json');
+var join = JSON.parse(already.toString());
+exports.geteventguest = function geteventguest(from) {
 
-exports.geteventguest = function(from) {
+	// console.log(join);
+
 	fbrequest.get('https://www.facebook.com/ajax/browser/list/event_members/?id=798605910236376&edge=temporal_groups%3Amember_of_temporal_group&start=' + from + '&__user=' + fb_userid + '&__a=1&__dyn=7nmajEyl2lm9o-t2u5bGya4Au7pEsx6iqAdy9VQC-K26m6oKeG3t6zUybxu3fzob8iUkUyF8izam8y99EnGp3p8&__req=11&__rev=1744086', function(err, httpResponse, body) {
+		console.log(from);
 		var cuthead = /for \(;;\);(.+)/;
 		var raw = JSON.parse(cuthead.exec(body)[1]);
+
 		var raw_uni = ent.decode(raw.domops[0][3]['__html']);
-		// console.log(raw_uni);
-		$ = cheerio.load(raw_uni);
-		var image = $('.fbProfileBrowserListItem').each(function(i, elem) {
-			console.log(i)
-			var image = $(this).find('img').attr('src');
-			var name = $(this).find('.fcb a').text();
-			console.log(image);
-			console.log(name);
-			var i_name = image.match(/\/\w\d+x\d+\/(.+)\.jpg\?/)[1];
-			fs.appendFileSync('./name.txt', name + '\t' + i_name + '\t我要參加！\n');
-			download(image, './image/' + i_name + '.jpg', function() {
-				console.log('download done');
+		// console.log(raw_uni)
+		if (raw_uni == '') {
+			console.log('目前' + join.length + '人');
+			fs.writeFile('./join.json', JSON.stringify(join), function(err, data) {
+				console.log('結束');
 			});
+		} else {
+			// console.log(raw_uni);
+			$ = cheerio.load(raw_uni);
+			$('.fbProfileBrowserListItem').each(function(i, elem) {
+				// console.log(i)
+				var image = $(this).find('img').attr('src');
+				var name = $(this).find('.fcb a').text();
+				// console.log(image);
+				// console.log(name);
+				var i_name = image.match(/\/\w\d+x\d+\/(.+)\.jpg\?/)[1];
+				var obj = {
+					name: name,
+					i_name: i_name,
+					image: image
+				};
+				if (!_.find(join, function(elem) {
+						return elem.i_name == i_name;
+					})) {
+					console.log('new user: ' + obj.name);
+					join.push(obj);
+					download(image, './image/' + i_name + '.jpg', function() {
+						// console.log('download done');
+					});
+				}
 
-			console.log(i_name);
-		});
 
-		// fs.writeFileSync('a.html', raw_uni);
+			});
+			geteventguest(from + 100);
+		}
+
+
 
 	});
 };
